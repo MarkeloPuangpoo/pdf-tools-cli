@@ -1,0 +1,120 @@
+{
+  "$schema": "./manifest.schema.json",
+  "version": "1.0.0",
+  "generator": "scripts/generate_fixtures.py",
+  "fixtures": [
+    {
+      "id": "single_page",
+      "filename": "single_page.pdf",
+      "page_count": 1,
+      "encrypted": false,
+      "description": "Minimal 1-page Letter document with single text line",
+      "sha256": "ea8f3021cae722297c39392da945323adf43466908e735adc39e32c169d053d7",
+      "size_bytes": 1395,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "multi_page",
+      "filename": "multi_page.pdf",
+      "page_count": 5,
+      "encrypted": false,
+      "description": "Standard 5-page Letter document with page content",
+      "sha256": "abf509ec17064a148f4feab6435a3468a6d6cc6d0e7c6b77182393ed5377c01f",
+      "size_bytes": 3301,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "rotated_pages",
+      "filename": "rotated_pages.pdf",
+      "page_count": 4,
+      "encrypted": false,
+      "rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "description": "4-page document containing 0, 90, 180, and 270 degree page rotations",
+      "sha256": "5daffe296d6294c4b59d4fc707bcc2e630f597de44bdc2d3cf49dc5c2c30f8d5",
+      "size_bytes": 2405,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "text_sample",
+      "filename": "text_sample.pdf",
+      "page_count": 2,
+      "encrypted": false,
+      "description": "2-page document with invoice text, amounts, and audit keywords",
+      "sha256": "f8400937faaedb89d6934c91772b43aa7fa2e9b1cdb8fdf2a73a91b5c6d918c0",
+      "size_bytes": 1991,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "metadata_sample",
+      "filename": "metadata_sample.pdf",
+      "page_count": 1,
+      "encrypted": false,
+      "metadata": {
+        "title": "Quarterly Strategic Plan",
+        "author": "Jane Doe",
+        "subject": "Corporate Strategy"
+      },
+      "description": "Document containing both Info dictionary and XMP metadata",
+      "sha256": "e00d5084d8186b0a6110fdf46bc712e7263c39e855058b9082061d313436b874",
+      "size_bytes": 2097,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "outlines_sample",
+      "filename": "outlines_sample.pdf",
+      "page_count": 3,
+      "encrypted": false,
+      "outlines": [
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3"
+      ],
+      "description": "3-page document with document outlines (bookmarks)",
+      "sha256": "c16322b0e05c4ad605e64da908b8cba14b03711e2f2d61714bf3d41d764f8788",
+      "size_bytes": 2439,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "encrypted_aes256",
+      "filename": "encrypted_aes256.pdf",
+      "page_count": 1,
+      "encrypted": true,
+      "cipher": "AES-256",
+      "user_password": "userpass123",
+      "owner_password": "ownerpass123",
+      "description": "AES-256 encrypted document with separate user and owner passwords",
+      "sha256": "530ef3a71c7c47be36b78c2ec21d7897d137b912c4fc8b8189eaecd394aad34d",
+      "size_bytes": 2392,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "encrypted_empty_user",
+      "filename": "encrypted_empty_user.pdf",
+      "page_count": 1,
+      "encrypted": true,
+      "cipher": "AES-256",
+      "user_password": "",
+      "owner_password": "ownerpass123",
+      "description": "AES-256 encrypted document readable without password, protected owner",
+      "sha256": "f391d7d80d18658d5782a8ba08301dfa1b0d0f0e48e68d998294caacee418a48",
+      "size_bytes": 2424,
+      "license": "CC0-1.0"
+    },
+    {
+      "id": "malformed_corrupt_xref",
+      "filename": "malformed_corrupt_xref.pdf",
+      "page_count": 1,
+      "encrypted": false,
+      "is_malformed": true,
+      "description": "Corrupted PDF with mutilated startxref token for recovery testing",
+      "sha256": "1981864384bd34b49dfaed5acd002caced4de333daa42c4a128dafd7f9a9a448",
+      "size_bytes": 1369,
+      "license": "CC0-1.0"
+    }
+  ]
+}

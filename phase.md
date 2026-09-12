@@ -8,7 +8,7 @@
 
 | Phase | ชื่อเฟส (Designation) | วัตถุประสงค์หลัก | คำสั่งที่ครอบคลุม | ผลลัพธ์เป้าหมาย (Deliverable) | สถานะ |
 |---|---|---|---|---|---|
-| **Phase 0** | Repository & Engineering Foundations | ติดตั้ง Build system, Toolchains, Test harness, Native spikes | ไม่มี | Dev environment พร้อมใช้, `uv.lock`, fixture generation | `[ ]` ไม่เริ่ม |
+| **Phase 0** | Repository & Engineering Foundations | ติดตั้ง Build system, Toolchains, Test harness, Native spikes | ไม่มี | Dev environment พร้อมใช้, `uv.lock`, fixture generation | `[x]` สำเร็จ |
 | **Phase 1** | Core Subsystems & CLI Presentation | Range grammar, I/O safety, Process isolation, Secrets, Presenter | `completion` (C04) | Core libraries, Click root, JSON v1 envelope | `[ ]` ไม่เริ่ม |
 | **Phase 2** | PDF Backend Adapters | `pikepdf` และ `pypdfium2` adapters, worker boundary | ไม่มี | Backend adapters ผ่าน contract tests บนไฟล์จริง | `[ ]` ไม่เริ่ม |
 | **Phase 3** | MVP Command Suite (P1) | Core manipulation, inspection, text, encryption, lossless optimize | 16 คำสั่งหลัก (C01–C05, C09–C14, C20, C26, C31, C35–C36) | **v0.1.0 MVP Release** | `[ ]` ไม่เริ่ม |
@@ -52,15 +52,15 @@
 ### Phase 0: Repository & Engineering Foundations
 > **เป้าหมาย:** สร้างรากฐานโปรเจกต์ Python, กำหนดสเปก build system, linter/type checker, ล็อก dependency hashes และสร้าง fixture generator สำหรับไฟล์ PDF
 
-- [ ] **ARCH-001: Project Scaffolding & Developer Tooling**
+- [x] **ARCH-001: Project Scaffolding & Developer Tooling** (Completed)
   - **งาน:** สร้าง `pyproject.toml` (Hatchling backend), `.python-version` (3.12), `.gitignore`, `ruff.toml`, skeleton `src/pdftoolscli/` (`__init__.py`, `__main__.py`, `py.typed`)
   - **ทดสอบ:** `tests/test_scaffolding.py` เช็ค package import และ version export
   - **เกณฑ์สำเร็จ:** `uv sync --locked`, `ruff check .` และ `mypy src` ผ่าน 0 errors
-- [ ] **ARCH-002: Backend Spike Validation & Native Dependency Lock**
+- [x] **ARCH-002: Backend Spike Validation & Native Dependency Lock** (Completed)
   - **งาน:** Spike ทดสอบ thread-safety และ memory leak ของ `pypdfium2` และ `pikepdf`, ล็อกเวอร์ชัน wheels ใน `uv.lock`
   - **ทดสอบ:** `scripts/spike_pikepdf.py`, `scripts/spike_pdfium.py`
   - **เกณฑ์สำเร็จ:** Native handles ถูกปิดสมบูรณ์, ไม่เกิด segfault, lockfile มี SHA-256 hash ครบ
-- [ ] **TEST-001: PDF Test Fixture Generator & Verification Harness**
+- [x] **TEST-001: PDF Test Fixture Generator & Verification Harness** (Completed)
   - **งาน:** สร้างสคริปต์ generate PDF fixture หลากหลายรูปแบบ (single-page, multi-page, rotated, encrypted, form fields, malformed) แบบ deterministic
   - **ทดสอบ:** ตรวจสอบ SHA-256 ของ fixture ที่ generate ตรงกับ manifest
   - **เกณฑ์สำเร็จ:** Fixtures พร้อมใช้งานสำหรับทุก unit และ integration tests

@@ -1,0 +1,13 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "S", "C4", "UP", "PT", "SIM", "RET"]
+ignore = []
+
+[lint.isort]
+known-first-party = ["pdftoolscli"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]  # S101: allow assert in tests
+"scripts/*" = ["S101", "S106", "PT017"]  # allow assert, test passwords, and manual exception assertions in standalone scripts
