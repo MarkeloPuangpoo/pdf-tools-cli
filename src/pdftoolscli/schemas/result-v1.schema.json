@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PDFToolsCLIResultV1",
+  "description": "Standard output envelope conforming to PLAN.md §16, §17",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool_version",
+    "command",
+    "status",
+    "data",
+    "warnings",
+    "errors",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "tool_version": {
+      "type": "string"
+    },
+    "command": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "planned", "partial", "error"]
+    },
+    "data": {
+      "type": ["object", "null"]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["elapsed_ms"],
+      "properties": {
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "required": ["code", "category", "message"],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "input_id": {
+          "type": ["string", "null"]
+        },
+        "page": {
+          "type": ["integer", "null"]
+        },
+        "details": {
+          "type": ["object", "string", "null"]
+        },
+        "hint": {
+          "type": ["string", "null"]
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
