@@ -36,3 +36,18 @@ def test_cli_help_flag() -> None:
     )
     assert "Usage:" in res.stdout
     assert "pdftoolscli" in res.stdout
+
+
+def test_ptc_alias_entrypoint() -> None:
+    """Test that the ptc alias entrypoint is wired to cli."""
+    res = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from pdftoolscli.cli.main import cli; import sys; sys.exit(cli(['--help']))",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert "Usage:" in res.stdout

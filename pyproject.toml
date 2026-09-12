@@ -40,6 +40,7 @@ dependencies = [
 
 [project.scripts]
 pdftoolscli = "pdftoolscli.cli.main:cli"
+ptc = "pdftoolscli.cli.main:cli"
 
 [dependency-groups]
 dev = [
