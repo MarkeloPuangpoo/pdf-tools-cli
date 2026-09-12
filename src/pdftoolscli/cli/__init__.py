@@ -1,3 +1,5 @@
-"""CLI package for pdftoolscli."""
+"""CLI subsystem for PDF Tools CLI."""
 
-from __future__ import annotations
+from pdftoolscli.cli.main import cli, main
+
+__all__ = ["cli", "main"]
