@@ -55,4 +55,8 @@ junit/
 scratch/
 tmp/
 
+# Planning & Tracking Documents (Local only)
+PLAN.md
+phase.md
+
 refimage/
