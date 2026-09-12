@@ -89,7 +89,7 @@ class Lexer:
             )
 
         # Check for numbers: positive_integer = nonzero_digit, { digit }
-        if ch.isdigit():
+        if "0" <= ch <= "9":
             if ch == "0":
                 # Disallow leading zero / zero
                 self._advance()
@@ -102,7 +102,7 @@ class Lexer:
                 )
 
             digits = []
-            while self.pos < self.length and self.text[self.pos].isdigit():
+            while self.pos < self.length and "0" <= self.text[self.pos] <= "9":
                 digits.append(self._advance())
 
             # Check if there is space inside a number followed by more digits, e.g. "1 2"
@@ -111,7 +111,7 @@ class Lexer:
                 peek_pos = self.pos
                 while peek_pos < self.length and self.text[peek_pos] in " \t":
                     peek_pos += 1
-                if peek_pos < self.length and self.text[peek_pos].isdigit():
+                if peek_pos < self.length and "0" <= self.text[peek_pos] <= "9":
                     raise RangeSyntaxError(
                         "Whitespace inside numbers is rejected",
                         offset=self.pos,
@@ -127,9 +127,11 @@ class Lexer:
             )
 
         # Check for alphabetic keywords: last, all, odd, even
-        if ch.isalpha():
+        if ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
             letters = []
-            while self.pos < self.length and self.text[self.pos].isalpha():
+            while self.pos < self.length and (
+                ("a" <= self.text[self.pos] <= "z") or ("A" <= self.text[self.pos] <= "Z")
+            ):
                 letters.append(self._advance())
             word = "".join(letters)
             if word in ("last", "all", "odd", "even"):
