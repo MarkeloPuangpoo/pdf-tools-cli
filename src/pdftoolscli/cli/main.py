@@ -110,8 +110,8 @@ def cli(
             if ui or is_interactive_tty:
                 from pdftoolscli.presentation.tui import launch_tui
 
-                launch_tui()
-                ctx.exit(0)
+                code = launch_tui()
+                ctx.exit(code)
             else:
                 # Non-interactive / CI / pipe fallback: print standard help
                 click.echo(ctx.get_help())
