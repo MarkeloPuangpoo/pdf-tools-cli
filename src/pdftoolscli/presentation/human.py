@@ -97,4 +97,4 @@ class HumanPresenter:
     def render_data(self, text: str) -> None:
         """Render primary requested text output directly to stdout."""
         clean = sanitize_terminal_text(text)
-        self.stdout_console.print(clean)
+        self.stdout_console.print(clean, soft_wrap=True)
