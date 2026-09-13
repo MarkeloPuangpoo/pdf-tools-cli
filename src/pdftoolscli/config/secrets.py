@@ -299,3 +299,35 @@ def assert_no_raw_password_cli_argument(argv: list[str]) -> None:
     for arg in argv:
         if arg == "--password" or arg.startswith("--password="):
             raise SecretError(msg, code="E_PASSWORD_INVALID")
+
+
+def resolve_password_source(
+    password_file: str | None = None,
+    password_env: str | None = None,
+    password_stdin: bool = False,
+    prompt_if_tty: bool = False,
+    prompt_label: str = "Enter password",
+) -> str | None:
+    """Resolve password from CLI flags with mutual exclusion checks.
+
+    Returns the secret string value, or None if no password source was supplied.
+    """
+    sources_count = sum([bool(password_file), bool(password_env), bool(password_stdin)])
+    if sources_count > 1:
+        raise SecretError(
+            "Cannot combine multiple password sources "
+            "(--password-file, --password-env, --password-stdin).",
+            code="E_CONFIG_INVALID",
+            hint="Specify only one password source flag.",
+        )
+
+    if password_file:
+        return PasswordFileProvider(password_file).get_password().get_secret()
+    if password_env:
+        return PasswordEnvProvider(password_env).get_password().get_secret()
+    if password_stdin:
+        return PasswordStdinProvider().get_password().get_secret()
+    if prompt_if_tty and sys.stdin.isatty():
+        return InteractivePasswordProvider(prompt_label).get_password().get_secret()
+
+    return None

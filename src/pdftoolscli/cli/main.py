@@ -133,6 +133,9 @@ def cli(
 
 # Register subcommands lazily
 cli.add_lazy_command("completion", "pdftoolscli.cli.commands.completion:completion_cmd")
+cli.add_lazy_command("inspect", "pdftoolscli.cli.commands.inspect:inspect_cmd")
+cli.add_lazy_command("validate", "pdftoolscli.cli.commands.validate:validate_cmd")
+cli.add_lazy_command("doctor", "pdftoolscli.cli.commands.doctor:doctor_cmd")
 
 
 def main() -> None:
