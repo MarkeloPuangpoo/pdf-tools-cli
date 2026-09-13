@@ -170,6 +170,7 @@ class EditingBackend(Protocol):
         handle: SafeDocumentHandle,
         page_indices: list[int],
         angle: int,
+        relative: bool = True,
     ) -> None:
         """Rotate specified 0-based page indices by angle (90, 180, 270 degrees CW)."""
         ...

@@ -316,6 +316,7 @@ class PikepdfBackend:
         handle: SafeDocumentHandle,
         page_indices: list[int],
         angle: int,
+        relative: bool = True,
     ) -> None:
         """Rotate specific page indices by angle (CW)."""
         pdf = self._get_pdf(handle)
@@ -329,8 +330,11 @@ class PikepdfBackend:
                     page=idx + 1,
                     page_count=total,
                 )
-            current = int(pdf.pages[idx].get("/Rotate", 0))
-            pdf.pages[idx].Rotate = (current + norm_angle) % 360
+            if relative:
+                current = int(pdf.pages[idx].get("/Rotate", 0))
+                pdf.pages[idx].Rotate = (current + norm_angle) % 360
+            else:
+                pdf.pages[idx].Rotate = norm_angle
 
     def copy_foreign_pages(
         self,

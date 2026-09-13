@@ -136,6 +136,8 @@ cli.add_lazy_command("completion", "pdftoolscli.cli.commands.completion:completi
 cli.add_lazy_command("inspect", "pdftoolscli.cli.commands.inspect:inspect_cmd")
 cli.add_lazy_command("validate", "pdftoolscli.cli.commands.validate:validate_cmd")
 cli.add_lazy_command("doctor", "pdftoolscli.cli.commands.doctor:doctor_cmd")
+cli.add_lazy_command("split", "pdftoolscli.cli.commands.split:split_cmd")
+cli.add_lazy_command("pages", "pdftoolscli.cli.commands.pages:pages_group")
 
 
 def main() -> None:
