@@ -58,6 +58,17 @@ class InvocationWorkspace:
                 os.chmod(p, 0o600)
         return p
 
+    def create_scratch_dir(self, prefix: str = "dir-") -> Path:
+        """Create a private scratch directory with 0700 permissions in this workspace."""
+        scratch_dir = tempfile.mkdtemp(prefix=prefix, dir=str(self.path))
+        p = Path(scratch_dir)
+        if sys.platform != "win32":
+            import contextlib
+
+            with contextlib.suppress(OSError):
+                os.chmod(p, 0o700)
+        return p
+
     def cleanup(self) -> None:
         """Safely remove the workspace directory and all contained scratch files."""
         if self._workspace_dir is not None and self._workspace_dir.exists():

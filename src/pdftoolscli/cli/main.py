@@ -147,6 +147,7 @@ cli.add_lazy_command("metadata", "pdftoolscli.cli.commands.metadata:metadata_gro
 cli.add_lazy_command("assemble", "pdftoolscli.cli.commands.assemble:assemble_cmd")
 cli.add_lazy_command("insert", "pdftoolscli.cli.commands.insert:insert_cmd")
 cli.add_lazy_command("interleave", "pdftoolscli.cli.commands.interleave:interleave_cmd")
+cli.add_lazy_command("images", "pdftoolscli.cli.commands.images:images_group")
 
 
 def main() -> None:
