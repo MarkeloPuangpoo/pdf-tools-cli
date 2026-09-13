@@ -24,10 +24,16 @@ class RenderSpec:
     alpha: bool = False
     bg_color: tuple[int, int, int] = (255, 255, 255)
     scale: float | None = None
+    quality: int = 85
+    colorspace: str = "rgb"
 
     def __post_init__(self) -> None:
         if not (MIN_DPI <= self.dpi <= MAX_DPI):
             raise ValueError(f"DPI must be between {MIN_DPI} and {MAX_DPI}, got {self.dpi}")
+        if self.colorspace not in ("rgb", "gray"):
+            raise ValueError(f"Unsupported colorspace '{self.colorspace}'. Allowed: rgb, gray.")
+        if not (0 <= self.quality <= 100):
+            raise ValueError(f"Quality must be between 0 and 100, got {self.quality}")
 
 
 @dataclass(frozen=True)

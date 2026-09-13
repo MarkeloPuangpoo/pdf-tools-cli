@@ -190,3 +190,47 @@ def apply_crop_margins_to_box(
         )
 
     return (new_llx, new_lly, new_urx, new_ury)
+
+
+NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    "white": (255, 255, 255),
+    "black": (0, 0, 0),
+    "red": (255, 0, 0),
+    "green": (0, 255, 0),
+    "blue": (0, 0, 255),
+    "yellow": (255, 255, 0),
+    "cyan": (0, 255, 255),
+    "magenta": (255, 0, 255),
+    "gray": (128, 128, 128),
+    "grey": (128, 128, 128),
+}
+
+
+def parse_color(color_str: str) -> tuple[int, int, int]:
+    """Parse a named color or hex color '#RRGGBB' / '#RGB' into (R, G, B) integers (0-255)."""
+    s = color_str.strip().lower()
+    if s in NAMED_COLORS:
+        return NAMED_COLORS[s]
+
+    if s.startswith("#"):
+        hex_val = s[1:]
+        if len(hex_val) == 3:
+            return (
+                int(hex_val[0] * 2, 16),
+                int(hex_val[1] * 2, 16),
+                int(hex_val[2] * 2, 16),
+            )
+        if len(hex_val) == 6:
+            return (
+                int(hex_val[0:2], 16),
+                int(hex_val[2:4], 16),
+                int(hex_val[4:6], 16),
+            )
+
+    raise PDFToolsError(
+        f"Invalid color expression '{color_str}'. "
+        "Allowed: named color (white, black, etc.) or hex format (#RRGGBB).",
+        code="E_CLI_INVALID_OPTION",
+        exit_code=ExitCode.USAGE_OR_SELECTION,
+        hint="Specify color as a name like 'white' or hex like '#FFFFFF'.",
+    )

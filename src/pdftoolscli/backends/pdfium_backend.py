@@ -23,9 +23,11 @@ from pdftoolscli.contracts.text import (
     TextPageResult,
 )
 from pdftoolscli.domain.errors import (
+    ExitCode,
     PageBoundsError,
     PDFEncryptedError,
     PDFInvalidError,
+    PDFToolsError,
     ResourceLimitError,
 )
 
@@ -99,24 +101,36 @@ class PdfiumBackend:
                         hint="Reduce requested DPI or render at a lower scale.",
                     )
 
+                fmt = spec.format.lower()
+                if spec.alpha and fmt in ("jpg", "jpeg", "tiff"):
+                    raise PDFToolsError(
+                        f"Transparent background is not supported for {spec.format.upper()}.",
+                        code="E_INVALID_FORMAT_ALPHA",
+                        exit_code=ExitCode.USAGE_OR_SELECTION,
+                        hint="Use PNG or WebP for transparency, or specify an opaque background.",
+                    )
+
                 fill = (0, 0, 0, 0) if spec.alpha else (*spec.bg_color, 255)
                 bitmap = page.render(scale=scale, fill_color=fill)
                 try:
                     pil_image: Image.Image = bitmap.to_pil()
-                    fmt = spec.format.lower()
-                    buf = io.BytesIO()
+                    if spec.colorspace == "gray":
+                        pil_image = pil_image.convert("L")
 
+                    buf = io.BytesIO()
                     if fmt in ("jpg", "jpeg"):
                         if pil_image.mode == "RGBA":
                             rgb_im = Image.new("RGB", pil_image.size, spec.bg_color)
                             rgb_im.paste(pil_image, mask=pil_image.split()[3])
-                            rgb_im.save(buf, format="JPEG", quality=90)
+                            rgb_im.save(buf, format="JPEG", quality=spec.quality)
+                        elif pil_image.mode == "L":
+                            pil_image.save(buf, format="JPEG", quality=spec.quality)
                         else:
-                            pil_image.convert("RGB").save(buf, format="JPEG", quality=90)
+                            pil_image.convert("RGB").save(buf, format="JPEG", quality=spec.quality)
                     elif fmt == "webp":
-                        pil_image.save(buf, format="WEBP")
+                        pil_image.save(buf, format="WEBP", quality=spec.quality)
                     elif fmt == "tiff":
-                        pil_image.save(buf, format="TIFF")
+                        pil_image.save(buf, format="TIFF", compression="tiff_deflate")
                     else:
                         pil_image.save(buf, format="PNG")
 

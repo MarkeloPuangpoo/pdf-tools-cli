@@ -68,6 +68,7 @@ mypy_path = "src"
 module = [
     "pypdfium2.*",
     "reportlab.*",
+    "img2pdf.*",
 ]
 ignore_missing_imports = true
 
