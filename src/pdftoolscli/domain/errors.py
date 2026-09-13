@@ -211,3 +211,76 @@ class ResourceLimitError(PDFToolsError):
             exit_code=ExitCode.RESOURCE_LIMIT,
             hint=hint or "Increase resource limits via CLI flags or configuration.",
         )
+
+
+class PDFInvalidError(PDFToolsError):
+    """Raised when a PDF file is structurally invalid or cannot be parsed."""
+
+    def __init__(
+        self,
+        message: str,
+        code: str = "E_PDF_INVALID",
+        details: dict[str, Any] | str | None = None,
+        hint: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            category="document",
+            exit_code=ExitCode.INVALID_DOCUMENT,
+            details=details,
+            hint=hint or "Verify that the file is a valid PDF document.",
+        )
+
+
+class PDFCorruptionError(PDFInvalidError):
+    """Raised when a PDF document has corrupted xref tables, streams, or objects."""
+
+    def __init__(
+        self,
+        message: str,
+        details: dict[str, Any] | str | None = None,
+        hint: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code="E_PDF_CORRUPT",
+            details=details,
+            hint=hint or "The PDF file is corrupted and cannot be safely processed.",
+        )
+
+
+class PDFEncryptedError(SecretError):
+    """Raised when a PDF file requires a password or provided password was invalid."""
+
+    def __init__(
+        self,
+        message: str,
+        code: str = "E_PASSWORD_REQUIRED",
+        hint: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            hint=(
+                hint
+                or "Provide a password using --password-file, --password-env, or --password-stdin."
+            ),
+        )
+
+
+class SignaturePresentError(PDFToolsError):
+    """Raised when attempting to modify a PDF with digital signatures."""
+
+    def __init__(
+        self,
+        message: str = "Document contains digital signatures that would be invalidated.",
+        hint: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code="E_SIGNATURE_PRESENT",
+            category="safety",
+            exit_code=ExitCode.SAFETY_CONFLICT,
+            hint=hint or "Modifying signed documents invalidates existing digital signatures.",
+        )
