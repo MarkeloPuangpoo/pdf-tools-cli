@@ -92,6 +92,26 @@ class PDFToolsError(Exception):
         )
 
 
+class UsageError(PDFToolsError):
+    """Raised when invalid command line arguments or options are provided (exit code 2)."""
+
+    def __init__(
+        self,
+        message: str,
+        code: str = "E_USAGE",
+        hint: str | None = None,
+        details: dict[str, Any] | str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            category="usage",
+            exit_code=ExitCode.USAGE_OR_SELECTION,
+            hint=hint,
+            details=details,
+        )
+
+
 class RangeSyntaxError(PDFToolsError):
     """Raised when a page range string has invalid syntax."""
 
@@ -284,3 +304,25 @@ class SignaturePresentError(PDFToolsError):
             exit_code=ExitCode.SAFETY_CONFLICT,
             hint=hint or "Modifying signed documents invalidates existing digital signatures.",
         )
+
+
+class BatchError(PDFToolsError):
+    """Raised when one or more batch items fail execution (exit code 9)."""
+
+    def __init__(
+        self,
+        message: str,
+        code: str = "E_BATCH_FAILED",
+        failed_count: int = 0,
+        hint: str | None = None,
+        details: dict[str, Any] | str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code=code,
+            category="batch",
+            exit_code=ExitCode.BATCH_FAILURE,
+            hint=hint or f"{failed_count} batch item(s) failed during execution.",
+            details=details,
+        )
+        self.failed_count = failed_count

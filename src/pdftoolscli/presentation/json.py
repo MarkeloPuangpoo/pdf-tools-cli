@@ -63,3 +63,25 @@ def render_json(
     )
     target.write(payload)
     target.flush()
+
+
+def render_json_bytes(
+    command: str,
+    status: str = "ok",
+    data: dict[str, Any] | None = None,
+    warnings: list[ErrorDetail] | None = None,
+    errors: list[ErrorDetail] | None = None,
+    elapsed_ms: int = 0,
+    indent: int | None = 2,
+) -> bytes:
+    """Format and return a JSON Schema v1 result envelope as UTF-8 encoded bytes."""
+    payload = format_json_result(
+        command=command,
+        status=status,
+        data=data,
+        warnings=warnings,
+        errors=errors,
+        elapsed_ms=elapsed_ms,
+        indent=indent,
+    )
+    return payload.encode("utf-8")
