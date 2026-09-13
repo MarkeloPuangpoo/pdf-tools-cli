@@ -443,3 +443,385 @@ def rotate_cmd(
             )
     except Exception as err:
         _handle_error(ctx, err, "pages rotate", opts, presenter, start_time)
+
+
+# ---------------------------------------------------------------------------
+# C15: pages duplicate
+# ---------------------------------------------------------------------------
+@pages_group.command("duplicate")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument("range_expr", type=str)
+@click.option(
+    "--after",
+    "after_page",
+    required=True,
+    help="Target anchor page: 0 (before first), 'last', or 1-based page number.",
+)
+@click.option(
+    "--copies",
+    type=int,
+    default=1,
+    show_default=True,
+    help="Number of times to duplicate the page sequence.",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+    help="Target destination PDF file.",
+)
+@click.option("--password-file", type=click.Path(exists=True), help="Read password from file.")
+@click.option("--password-env", metavar="VAR", help="Read password from environment variable.")
+@click.option(
+    "--password-stdin", is_flag=True, default=False, help="Read password from standard input."
+)
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Allow overwriting existing destination files."
+)
+@click.pass_context
+def duplicate_cmd(
+    ctx: click.Context,
+    input_path: Path,
+    range_expr: str,
+    after_page: str,
+    output_path: Path,
+    copies: int,
+    password_file: str | None,
+    password_env: str | None,
+    password_stdin: bool,
+    overwrite: bool,
+) -> None:
+    """Duplicate a sequence of pages N times at a designated anchor."""
+    opts: GlobalOptions = ctx.obj.get("options", GlobalOptions())
+    presenter = HumanPresenter(color=opts.color, quiet=opts.quiet, verbose=opts.verbose)
+    start_time = ctx.obj.get("start_time", time.monotonic())
+
+    password = resolve_password_source(
+        password_file=password_file,
+        password_env=password_env,
+        password_stdin=password_stdin,
+        prompt_if_tty=False,
+    )
+
+    try:
+        service = PageService()
+        result = service.duplicate(
+            input_path=input_path,
+            range_expr=range_expr,
+            after_page=after_page,
+            output_path=output_path,
+            copies=copies,
+            password=password,
+            overwrite=overwrite,
+        )
+
+        elapsed_ms = int((time.monotonic() - start_time) * 1000)
+        if opts.json:
+            render_json(
+                command="pages duplicate",
+                status="success",
+                data=result,
+                elapsed_ms=elapsed_ms,
+            )
+            return
+
+        if not opts.quiet:
+            presenter.stdout_console.print(
+                f"[bold green]✓[/bold green] Duplicated {result['duplicated_pages_count']} "
+                f"page(s) ({copies} copy/copies) into [bold]{output_path}[/bold] "
+                f"(total pages: {result['total_pages']})"
+            )
+    except Exception as err:
+        _handle_error(ctx, err, "pages duplicate", opts, presenter, start_time)
+
+
+# ---------------------------------------------------------------------------
+# C16: pages crop
+# ---------------------------------------------------------------------------
+@pages_group.command("crop")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option(
+    "--margins",
+    required=True,
+    help="Crop margins LEFT,TOP,RIGHT,BOTTOM with units pt/mm/in (e.g. 10mm,10mm,10mm,10mm).",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+    help="Target destination PDF file.",
+)
+@click.option(
+    "--pages",
+    "pages_range",
+    default=None,
+    help="Page range to crop (default: all).",
+)
+@click.option("--password-file", type=click.Path(exists=True), help="Read password from file.")
+@click.option("--password-env", metavar="VAR", help="Read password from environment variable.")
+@click.option(
+    "--password-stdin", is_flag=True, default=False, help="Read password from standard input."
+)
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Allow overwriting existing destination files."
+)
+@click.pass_context
+def crop_cmd(
+    ctx: click.Context,
+    input_path: Path,
+    margins: str,
+    output_path: Path,
+    pages_range: str | None,
+    password_file: str | None,
+    password_env: str | None,
+    password_stdin: bool,
+    overwrite: bool,
+) -> None:
+    """Apply margin offsets to displayed CropBox coordinates of selected pages."""
+    opts: GlobalOptions = ctx.obj.get("options", GlobalOptions())
+    presenter = HumanPresenter(color=opts.color, quiet=opts.quiet, verbose=opts.verbose)
+    start_time = ctx.obj.get("start_time", time.monotonic())
+
+    password = resolve_password_source(
+        password_file=password_file,
+        password_env=password_env,
+        password_stdin=password_stdin,
+        prompt_if_tty=False,
+    )
+
+    try:
+        service = PageService()
+        result = service.crop(
+            input_path=input_path,
+            margins_str=margins,
+            output_path=output_path,
+            range_expr=pages_range,
+            password=password,
+            overwrite=overwrite,
+        )
+
+        elapsed_ms = int((time.monotonic() - start_time) * 1000)
+        if opts.json:
+            render_json(
+                command="pages crop",
+                status="success",
+                data=result,
+                elapsed_ms=elapsed_ms,
+            )
+            return
+
+        if not opts.quiet:
+            presenter.stdout_console.print(
+                f"[bold green]✓[/bold green] Cropped [bold]{result['cropped_pages_count']}[/bold] "
+                f"page(s) with margins [bold]{margins}[/bold] into [bold]{output_path}[/bold]"
+            )
+    except Exception as err:
+        _handle_error(ctx, err, "pages crop", opts, presenter, start_time)
+
+
+# ---------------------------------------------------------------------------
+# C17: pages resize
+# ---------------------------------------------------------------------------
+@pages_group.command("resize")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option(
+    "--size",
+    required=True,
+    help="Target dimensions: A4, Letter, or WIDTHxHEIGHT with units (e.g. 210mmx297mm).",
+)
+@click.option(
+    "--fit",
+    type=click.Choice(["none", "contain"], case_sensitive=False),
+    default="none",
+    show_default=True,
+    help="Fit mode: none (re-canvas) or contain (uniform scaling).",
+)
+@click.option(
+    "--anchor",
+    default="center",
+    show_default=True,
+    help="Canvas placement anchor (default: center).",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+    help="Target destination PDF file.",
+)
+@click.option(
+    "--pages",
+    "pages_range",
+    default=None,
+    help="Page range to resize (default: all).",
+)
+@click.option("--password-file", type=click.Path(exists=True), help="Read password from file.")
+@click.option("--password-env", metavar="VAR", help="Read password from environment variable.")
+@click.option(
+    "--password-stdin", is_flag=True, default=False, help="Read password from standard input."
+)
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Allow overwriting existing destination files."
+)
+@click.pass_context
+def resize_cmd(
+    ctx: click.Context,
+    input_path: Path,
+    size: str,
+    fit: str,
+    anchor: str,
+    output_path: Path,
+    pages_range: str | None,
+    password_file: str | None,
+    password_env: str | None,
+    password_stdin: bool,
+    overwrite: bool,
+) -> None:
+    """Resize selected pages to standard dimensions or explicit width/height."""
+    opts: GlobalOptions = ctx.obj.get("options", GlobalOptions())
+    presenter = HumanPresenter(color=opts.color, quiet=opts.quiet, verbose=opts.verbose)
+    start_time = ctx.obj.get("start_time", time.monotonic())
+
+    password = resolve_password_source(
+        password_file=password_file,
+        password_env=password_env,
+        password_stdin=password_stdin,
+        prompt_if_tty=False,
+    )
+
+    try:
+        service = PageService()
+        result = service.resize(
+            input_path=input_path,
+            size_str=size,
+            output_path=output_path,
+            fit=fit,
+            anchor=anchor,
+            range_expr=pages_range,
+            password=password,
+            overwrite=overwrite,
+        )
+
+        elapsed_ms = int((time.monotonic() - start_time) * 1000)
+        if opts.json:
+            render_json(
+                command="pages resize",
+                status="success",
+                data=result,
+                elapsed_ms=elapsed_ms,
+            )
+            return
+
+        if not opts.quiet:
+            presenter.stdout_console.print(
+                f"[bold green]✓[/bold green] Resized [bold]{result['resized_pages_count']}[/bold] "
+                f"page(s) to [bold]{size}[/bold] (fit: {fit}) into [bold]{output_path}[/bold]"
+            )
+    except Exception as err:
+        _handle_error(ctx, err, "pages resize", opts, presenter, start_time)
+
+
+# ---------------------------------------------------------------------------
+# C18: pages boxes
+# ---------------------------------------------------------------------------
+@pages_group.command("boxes")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option(
+    "--set",
+    "set_boxes",
+    multiple=True,
+    required=True,
+    help="Set unrotated box coordinates: BOX=LLX,LLY,URX,URY (e.g. crop=0pt,0pt,500pt,700pt).",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+    help="Target destination PDF file.",
+)
+@click.option(
+    "--pages",
+    "pages_range",
+    default=None,
+    help="Page range to update boxes on (default: all).",
+)
+@click.option("--password-file", type=click.Path(exists=True), help="Read password from file.")
+@click.option("--password-env", metavar="VAR", help="Read password from environment variable.")
+@click.option(
+    "--password-stdin", is_flag=True, default=False, help="Read password from standard input."
+)
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Allow overwriting existing destination files."
+)
+@click.pass_context
+def boxes_cmd(
+    ctx: click.Context,
+    input_path: Path,
+    set_boxes: tuple[str, ...],
+    output_path: Path,
+    pages_range: str | None,
+    password_file: str | None,
+    password_env: str | None,
+    password_stdin: bool,
+    overwrite: bool,
+) -> None:
+    """View or set raw unrotated PDF bounding boxes (media, crop, trim, bleed, art)."""
+    opts: GlobalOptions = ctx.obj.get("options", GlobalOptions())
+    presenter = HumanPresenter(color=opts.color, quiet=opts.quiet, verbose=opts.verbose)
+    start_time = ctx.obj.get("start_time", time.monotonic())
+
+    password = resolve_password_source(
+        password_file=password_file,
+        password_env=password_env,
+        password_stdin=password_stdin,
+        prompt_if_tty=False,
+    )
+
+    try:
+        parsed_boxes: list[tuple[str, str]] = []
+        for item in set_boxes:
+            if "=" not in item:
+                raise PDFToolsError(
+                    f"Invalid --set format '{item}'. Expected format: BOX=LLX,LLY,URX,URY.",
+                    code="E_CLI_INVALID_OPTION",
+                    exit_code=ExitCode.USAGE_OR_SELECTION,
+                )
+            b_name, coords = item.split("=", 1)
+            parsed_boxes.append((b_name.strip(), coords.strip()))
+
+        service = PageService()
+        result = service.boxes(
+            input_path=input_path,
+            set_boxes=parsed_boxes,
+            output_path=output_path,
+            range_expr=pages_range,
+            password=password,
+            overwrite=overwrite,
+        )
+
+        elapsed_ms = int((time.monotonic() - start_time) * 1000)
+        if opts.json:
+            render_json(
+                command="pages boxes",
+                status="success",
+                data=result,
+                elapsed_ms=elapsed_ms,
+            )
+            return
+
+        if not opts.quiet:
+            presenter.stdout_console.print(
+                f"[bold green]✓[/bold green] Updated page boxes on "
+                f"[bold]{result['modified_pages_count']}[/bold] page(s) "
+                f"into [bold]{output_path}[/bold]"
+            )
+
+    except Exception as err:
+        _handle_error(ctx, err, "pages boxes", opts, presenter, start_time)

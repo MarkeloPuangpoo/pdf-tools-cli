@@ -10,6 +10,12 @@ import pikepdf
 
 from pdftoolscli.backends.pikepdf_backend import PikepdfBackend
 from pdftoolscli.domain.errors import ExitCode, PageBoundsError, PDFToolsError
+from pdftoolscli.domain.geometry import (
+    apply_crop_margins_to_box,
+    parse_box_coordinates,
+    parse_margins,
+    parse_page_size,
+)
 from pdftoolscli.domain.ranges import resolve_range
 from pdftoolscli.storage.atomic import AtomicPublisher
 from pdftoolscli.storage.identity import assert_distinct_files
@@ -357,4 +363,275 @@ class PageService:
                 "angle": angle % 360,
                 "absolute": absolute,
                 "rotated_pages_count": len(indices_0based),
+            }
+
+    def duplicate(
+        self,
+        input_path: Path,
+        range_expr: str,
+        after_page: str,
+        output_path: Path,
+        copies: int = 1,
+        password: str | None = None,
+        overwrite: bool = False,
+    ) -> dict[str, Any]:
+        """Duplicate a selected sequence of pages N times at designated anchor."""
+        if copies < 1:
+            raise PDFToolsError(
+                f"--copies must be a positive integer (got {copies}).",
+                code="E_CLI_INVALID_OPTION",
+                exit_code=ExitCode.USAGE_OR_SELECTION,
+            )
+
+        assert_distinct_files(input_path, output_path, operation_name="pages duplicate")
+
+        with self.backend.open_document(input_path, password=password) as handle:
+            pdf = handle.pdf
+            total_pages = len(pdf.pages)
+            resolved = resolve_range(range_expr, total_pages, context="sequence")
+
+            raw_after = after_page.strip().lower()
+            if raw_after == "0":
+                anchor = 0
+            elif raw_after == "last":
+                anchor = total_pages
+            else:
+                try:
+                    val = int(raw_after)
+                    if val < 0 or val > total_pages:
+                        raise ValueError()
+                    anchor = val
+                except ValueError:
+                    raise PDFToolsError(
+                        f"Invalid --after page '{after_page}'. Expected 0 (before first), "
+                        f"'last', or an integer between 1 and {total_pages}.",
+                        code="E_PAGE_BOUNDS",
+                        exit_code=ExitCode.USAGE_OR_SELECTION,
+                    ) from None
+
+            clones: list[pikepdf.Page] = []
+            for _ in range(copies):
+                for page_num in resolved:
+                    src_page = pdf.pages[page_num - 1]
+                    cloned_obj = pdf.make_indirect(src_page.obj.copy())
+                    clones.append(pikepdf.Page(cloned_obj))
+
+            pdf.pages[anchor:anchor] = clones
+            final_count = len(pdf.pages)
+
+            with InvocationWorkspace() as ws:
+                scratch = ws.create_scratch_file(prefix="duplicate-", suffix=".pdf")
+                self.backend.save(handle, scratch)
+                published = AtomicPublisher.publish_file(scratch, output_path, overwrite=overwrite)
+
+            return {
+                "command": "pages duplicate",
+                "input": str(input_path.resolve()),
+                "output": str(published.resolve()),
+                "copies": copies,
+                "duplicated_pages_count": len(resolved) * copies,
+                "total_pages": final_count,
+            }
+
+    def crop(
+        self,
+        input_path: Path,
+        margins_str: str,
+        output_path: Path,
+        range_expr: str | None = None,
+        password: str | None = None,
+        overwrite: bool = False,
+    ) -> dict[str, Any]:
+        """Apply margin offsets to displayed CropBox coordinates of selected pages."""
+        margins = parse_margins(margins_str)
+        assert_distinct_files(input_path, output_path, operation_name="pages crop")
+
+        with self.backend.open_document(input_path, password=password) as handle:
+            pdf = handle.pdf
+            total_pages = len(pdf.pages)
+            if range_expr is not None:
+                pages_1based = resolve_range(range_expr, total_pages, context="selection")
+            else:
+                pages_1based = list(range(1, total_pages + 1))
+
+            for p_num in pages_1based:
+                page = pdf.pages[p_num - 1]
+                raw_box = (
+                    page.cropbox if hasattr(page, "cropbox") and page.cropbox else page.mediabox
+                )
+                curr_box = [float(c) for c in raw_box]
+                rot = (
+                    int(page.rotation)
+                    if hasattr(page, "rotation") and page.rotation is not None
+                    else 0
+                )
+                new_box = apply_crop_margins_to_box(curr_box, margins, rotation=rot)
+                page.cropbox = pikepdf.Rectangle(*new_box)
+
+            with InvocationWorkspace() as ws:
+                scratch = ws.create_scratch_file(prefix="crop-", suffix=".pdf")
+                self.backend.save(handle, scratch)
+                published = AtomicPublisher.publish_file(scratch, output_path, overwrite=overwrite)
+
+            return {
+                "command": "pages crop",
+                "input": str(input_path.resolve()),
+                "output": str(published.resolve()),
+                "margins": margins_str,
+                "cropped_pages_count": len(pages_1based),
+                "total_pages": total_pages,
+            }
+
+    def resize(
+        self,
+        input_path: Path,
+        size_str: str,
+        output_path: Path,
+        fit: str = "none",
+        anchor: str = "center",
+        range_expr: str | None = None,
+        password: str | None = None,
+        overwrite: bool = False,
+    ) -> dict[str, Any]:
+        """Resize selected pages to standard dimensions or explicit dimensions."""
+        target_w, target_h = parse_page_size(size_str)
+        fit_mode = fit.lower().strip()
+        if fit_mode not in ("none", "contain"):
+            raise PDFToolsError(
+                f"Invalid --fit mode '{fit}'. Allowed values: none, contain.",
+                code="E_CLI_INVALID_OPTION",
+                exit_code=ExitCode.USAGE_OR_SELECTION,
+            )
+
+        assert_distinct_files(input_path, output_path, operation_name="pages resize")
+
+        with self.backend.open_document(input_path, password=password) as handle:
+            pdf = handle.pdf
+            total_pages = len(pdf.pages)
+            if range_expr is not None:
+                pages_1based = resolve_range(range_expr, total_pages, context="selection")
+            else:
+                pages_1based = list(range(1, total_pages + 1))
+
+            for p_num in pages_1based:
+                page = pdf.pages[p_num - 1]
+                cur_mb = [float(c) for c in page.mediabox]
+                cur_w = cur_mb[2] - cur_mb[0]
+                cur_h = cur_mb[3] - cur_mb[1]
+
+                if fit_mode == "contain":
+                    scale = min(target_w / cur_w, target_h / cur_h)
+                    scaled_w = cur_w * scale
+                    scaled_h = cur_h * scale
+                    tx = (target_w - scaled_w) / 2.0 - cur_mb[0] * scale
+                    ty = (target_h - scaled_h) / 2.0 - cur_mb[1] * scale
+                    prefix = f"q {scale:.6f} 0 0 {scale:.6f} {tx:.4f} {ty:.4f} cm\n".encode("ascii")
+                    suffix = b"\nQ\n"
+                    page.contents_add(prefix, prepend=True)
+                    page.contents_add(suffix, prepend=False)
+                else:
+                    tx = (target_w - cur_w) / 2.0 - cur_mb[0]
+                    ty = (target_h - cur_h) / 2.0 - cur_mb[1]
+                    prefix = f"q 1 0 0 1 {tx:.4f} {ty:.4f} cm\n".encode("ascii")
+                    suffix = b"\nQ\n"
+                    page.contents_add(prefix, prepend=True)
+                    page.contents_add(suffix, prepend=False)
+
+                page.mediabox = pikepdf.Rectangle(0, 0, target_w, target_h)
+                if hasattr(page, "cropbox") and page.cropbox:
+                    page.cropbox = pikepdf.Rectangle(0, 0, target_w, target_h)
+
+            with InvocationWorkspace() as ws:
+                scratch = ws.create_scratch_file(prefix="resize-", suffix=".pdf")
+                self.backend.save(handle, scratch)
+                published = AtomicPublisher.publish_file(scratch, output_path, overwrite=overwrite)
+
+            return {
+                "command": "pages resize",
+                "input": str(input_path.resolve()),
+                "output": str(published.resolve()),
+                "size": size_str,
+                "fit": fit_mode,
+                "resized_pages_count": len(pages_1based),
+                "total_pages": total_pages,
+            }
+
+    def boxes(
+        self,
+        input_path: Path,
+        set_boxes: list[tuple[str, str]],
+        output_path: Path,
+        range_expr: str | None = None,
+        password: str | None = None,
+        overwrite: bool = False,
+    ) -> dict[str, Any]:
+        """View or set raw unrotated PDF bounding boxes (media, crop, trim, bleed, art)."""
+        if not set_boxes:
+            raise PDFToolsError(
+                "pages boxes requires at least one '--set BOX=LLX,LLY,URX,URY' option.",
+                code="E_CLI_INVALID_OPTION",
+                exit_code=ExitCode.USAGE_OR_SELECTION,
+            )
+
+        valid_boxes = {
+            "media": "mediabox",
+            "crop": "cropbox",
+            "trim": "trimbox",
+            "bleed": "bleedbox",
+            "art": "artbox",
+        }
+        parsed_sets: dict[str, tuple[float, float, float, float]] = {}
+        for b_name, coords_str in set_boxes:
+            b_key = b_name.lower().strip()
+            if b_key not in valid_boxes:
+                raise PDFToolsError(
+                    f"Invalid box '{b_name}'. Allowed boxes: media, crop, trim, bleed, art.",
+                    code="E_CLI_INVALID_OPTION",
+                    exit_code=ExitCode.USAGE_OR_SELECTION,
+                )
+            if b_key in parsed_sets:
+                raise PDFToolsError(
+                    f"Duplicate box setting for '{b_name}'.",
+                    code="E_CLI_INVALID_OPTION",
+                    exit_code=ExitCode.USAGE_OR_SELECTION,
+                )
+            parsed_sets[b_key] = parse_box_coordinates(coords_str)
+
+        assert_distinct_files(input_path, output_path, operation_name="pages boxes")
+
+        with self.backend.open_document(input_path, password=password) as handle:
+            pdf = handle.pdf
+            total_pages = len(pdf.pages)
+            if range_expr is not None:
+                pages_1based = resolve_range(range_expr, total_pages, context="selection")
+            else:
+                pages_1based = list(range(1, total_pages + 1))
+
+            for p_num in pages_1based:
+                page = pdf.pages[p_num - 1]
+
+                for b_key, coords in parsed_sets.items():
+                    setattr(page, valid_boxes[b_key], pikepdf.Rectangle(*coords))
+
+                mb = [float(c) for c in page.mediabox]
+                cb = [float(c) for c in page.cropbox] if page.cropbox else mb
+                if cb[0] < mb[0] or cb[1] < mb[1] or cb[2] > mb[2] or cb[3] > mb[3]:
+                    raise PDFToolsError(
+                        f"Page {p_num}: CropBox ({cb}) must be contained within MediaBox ({mb}).",
+                        code="E_CLI_INVALID_OPTION",
+                        exit_code=ExitCode.USAGE_OR_SELECTION,
+                    )
+
+            with InvocationWorkspace() as ws:
+                scratch = ws.create_scratch_file(prefix="boxes-", suffix=".pdf")
+                self.backend.save(handle, scratch)
+                published = AtomicPublisher.publish_file(scratch, output_path, overwrite=overwrite)
+
+            return {
+                "command": "pages boxes",
+                "input": str(input_path.resolve()),
+                "output": str(published.resolve()),
+                "set_boxes": [{"box": b, "coordinates": c} for b, c in set_boxes],
+                "modified_pages_count": len(pages_1based),
+                "total_pages": total_pages,
             }

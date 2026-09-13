@@ -144,6 +144,9 @@ cli.add_lazy_command("decrypt", "pdftoolscli.cli.commands.encryption:decrypt_cmd
 cli.add_lazy_command("optimize", "pdftoolscli.cli.commands.optimize:optimize_cmd")
 cli.add_lazy_command("text", "pdftoolscli.cli.commands.text:text_group")
 cli.add_lazy_command("metadata", "pdftoolscli.cli.commands.metadata:metadata_group")
+cli.add_lazy_command("assemble", "pdftoolscli.cli.commands.assemble:assemble_cmd")
+cli.add_lazy_command("insert", "pdftoolscli.cli.commands.insert:insert_cmd")
+cli.add_lazy_command("interleave", "pdftoolscli.cli.commands.interleave:interleave_cmd")
 
 
 def main() -> None:
