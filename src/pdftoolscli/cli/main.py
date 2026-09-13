@@ -142,6 +142,7 @@ cli.add_lazy_command("merge", "pdftoolscli.cli.commands.merge:merge_cmd")
 cli.add_lazy_command("encrypt", "pdftoolscli.cli.commands.encryption:encrypt_cmd")
 cli.add_lazy_command("decrypt", "pdftoolscli.cli.commands.encryption:decrypt_cmd")
 cli.add_lazy_command("optimize", "pdftoolscli.cli.commands.optimize:optimize_cmd")
+cli.add_lazy_command("text", "pdftoolscli.cli.commands.text:text_group")
 
 
 def main() -> None:
