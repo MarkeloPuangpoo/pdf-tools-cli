@@ -152,6 +152,7 @@ cli.add_lazy_command("render", "pdftoolscli.cli.commands.render:render_cmd")
 cli.add_lazy_command("convert", "pdftoolscli.cli.commands.convert:convert_group")
 cli.add_lazy_command("stamp", "pdftoolscli.cli.commands.stamp:stamp_cmd")
 cli.add_lazy_command("number", "pdftoolscli.cli.commands.number:number_cmd")
+cli.add_lazy_command("annotations", "pdftoolscli.cli.commands.annotations:annotations_group")
 
 
 def main() -> None:
